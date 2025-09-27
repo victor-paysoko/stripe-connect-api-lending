@@ -20,10 +20,19 @@ Route::prefix('v1')->group(function () {
 
     Route::post('/fis/{fiId}/repayments/payment-intent', [PaymentIntentsController::class, 'create']);
 
+    // retrieve PI to poll status
     Route::get('/repayments/payment-intent/{piId}', [PaymentIntentsController::class, 'retrieve']);
 
     Route::post('/stripe/webhook', [StripeWebhookController::class, 'handle']);
+
+    // List connected accounts
+    Route::get('/stripe/connected-accounts', [\App\Http\Controllers\CB\FiAccountsController::class, 'listConnected']);
+
+    // Get one connected account by its acct_ id
+    Route::get('/stripe/connected-accounts/{accountId}', [\App\Http\Controllers\CB\FiAccountsController::class, 'getConnected']);
 });
+
+
 
 
 Route::get('/ping', fn() => response()->json(['pong' => true]));
