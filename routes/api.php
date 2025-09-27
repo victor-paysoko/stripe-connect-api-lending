@@ -22,7 +22,7 @@ Route::prefix('v1')->group(function () {
 
     Route::get('/repayments/payment-intent/{piId}', [PaymentIntentsController::class, 'retrieve']);
 
-    Route::post('/stripe/webhook', [StripeWebhookController::class, 'handle']);
+    // Route::post('/stripe/webhook', [StripeWebhookController::class, 'handle']);
 });
 
 

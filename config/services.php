@@ -39,7 +39,11 @@ return [
         'secret' => env('STRIPE_SECRET'),
         'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
         'client_id' => env('STRIPE_CLIENT_ID'),
+        'default_fi_id' => env('STRIPE_DEFAULT_FI_ID'),
+        'loan_id'=>env('loan_id'),
+        'borrower_id'=>env('borrower_id')
     ],
+
 
 
 ];
