@@ -7,6 +7,8 @@ use App\Http\Controllers\CB\PaymentIntentsController;
 use App\Http\Controllers\CB\StripeWebhookController;
 use App\Http\Controllers\CB\FiAccountsController;
 use App\Http\Controllers\Api\FundingController;
+use App\Http\Controllers\CB\BorrowersController;
+use App\Http\Controllers\CB\CustomersController;
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -30,6 +32,10 @@ Route::prefix('v1')->group(function () {
 
     // Get one connected account by its acct_ id
     Route::get('/stripe/connected-accounts/{accountId}', [\App\Http\Controllers\CB\FiAccountsController::class, 'getConnected']);
+
+    Route::get('/v1/stripe/customers/search', [CustomersController::class, 'search']);
+
+    Route::post('/v1/fis/{fiId}/borrowers/{borrowerId}/stripe-customer/link', [BorrowersController::class, 'linkStripeCustomer']);
 });
 
 
@@ -60,4 +66,3 @@ Route::get('/', function () {
         'documentation' => 'See FUNDING_API_TESTS.md for complete API documentation'
     ]);
 });
-
