@@ -470,7 +470,8 @@
                     loan_id: $('#loan_id').val(),
                     borrower_id: $('#borrower_id').val(),
                     description: $('#description').val() || null,
-                    confirm_now: false,
+                    payment_method:"pm_card_visa",
+                    confirm_now: true,
                     metadata: {
                         source: 'web_form',
                         timestamp: new Date().toISOString()
@@ -483,7 +484,7 @@
                     // Step 1: Create PaymentIntent on server
                     const fiId = 1; // Replace with actual FI ID or get from form/context
                     const response = await $.ajax({
-                        url: `/api/v1/fis/${fiId}/repayments/payment-intent`,
+                        url: `/api/v1/fis/${fiId}/repayments`,
                         method: 'POST',
                         data: JSON.stringify(formData),
                         contentType: 'application/json'
