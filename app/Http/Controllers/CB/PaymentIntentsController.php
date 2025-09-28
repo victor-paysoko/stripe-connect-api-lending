@@ -112,6 +112,90 @@ class PaymentIntentsController extends Controller
     }
 
 
+    public function confirm(Request $request, string $piId)
+    {
+        $payload = $request->validate([
+            'payment_method' => 'nullable|string',
+            'return_url'     => 'sometimes|url',
+        ]);
+
+
+
+        $stripe = new StripeClient(config('services.stripe.secret'));
+
+        try {
+            // First retrieve the PaymentIntent to get the connected account
+            $pi = $stripe->paymentIntents->retrieve($piId);
+
+            // Get the connected account ID from the transfer_data or on_behalf_of
+            $connectedAccountId = $pi->on_behalf_of ?? $pi->transfer_data->destination ?? null;
+
+            $confirmParams = [];
+
+            if (!empty($payload['payment_method'])) {
+                $confirmParams['payment_method'] = $payload['payment_method'];
+            }
+
+            if (!empty($payload['return_url'])) {
+                $confirmParams['return_url'] = $payload['return_url'];
+            }
+
+            // Options array for the API call
+            $options = [];
+            if ($connectedAccountId) {
+                // Use the connected account header for proper fee handling
+                $options['stripe_account'] = $connectedAccountId;
+            }
+
+            $confirmedPi = $stripe->paymentIntents->confirm($piId, $confirmParams, $options);
+
+            return response()->json([
+                'status' => 'success',
+                'payment_intent' => $confirmedPi,
+            ]);
+
+        } catch (Throwable $e) {
+            return response()->json([
+                'error'   => 'PAYMENT_INTENT_CONFIRM_FAILED',
+                'message' => $e->getMessage(),
+                'details' => [
+                    'payment_intent_id' => $piId,
+                    'error_type' => get_class($e),
+                ]
+            ], 422);
+        }
+    }
+
+
+    public function cancel(string $piId)
+    {
+        $stripe = new StripeClient(config('services.stripe.secret'));
+
+        try {
+            // First retrieve to get connected account info
+            $pi = $stripe->paymentIntents->retrieve($piId);
+            $connectedAccountId = $pi->on_behalf_of ?? $pi->transfer_data->destination ?? null;
+
+            $options = [];
+            if ($connectedAccountId) {
+                $options['stripe_account'] = $connectedAccountId;
+            }
+
+            $cancelledPi = $stripe->paymentIntents->cancel($piId, [], $options);
+
+            return response()->json([
+                'status' => 'success',
+                'payment_intent' => $cancelledPi,
+            ]);
+
+        } catch (Throwable $e) {
+            return response()->json([
+                'error'   => 'PAYMENT_INTENT_CANCEL_FAILED',
+                'message' => $e->getMessage(),
+            ], 422);
+        }
+    }
+
     public function retrieve(string $piId)
     {
         $stripe = new StripeClient(config('services.stripe.secret'));

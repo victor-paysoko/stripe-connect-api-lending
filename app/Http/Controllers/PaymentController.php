@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\IdGenerator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Client\RequestException;
@@ -46,8 +47,11 @@ class PaymentController extends Controller
        public function create(Request $request)
     {
 
-         $borower_id=env('borrower_id');
-         $loan_id=env('loan_id');
+         $loan_id = IdGenerator::generateLoanId();
+
+
+        $borower_id = IdGenerator::generateBorrowerId();
+
         return view('payments.create',compact('borower_id','loan_id'));
     }
 

@@ -19,6 +19,12 @@ Route::prefix('v1')->group(function () {
     Route::get('/fis/{fiId}/stripe-account/health', [FiAccountsController::class, 'health']);
 
     Route::post('/fis/{fiId}/repayments/payment-intent', [PaymentIntentsController::class, 'create']);
+        // Confirm payment intent
+    Route::post('payment-intents/{piId}/confirm', [PaymentIntentsController::class, 'confirm']);
+
+    // Cancel payment intent
+    Route::post('payment-intents/{piId}/cancel', [PaymentIntentsController::class, 'cancel']);
+
 
     // retrieve PI to poll status
     Route::get('/repayments/payment-intent/{piId}', [PaymentIntentsController::class, 'retrieve']);
