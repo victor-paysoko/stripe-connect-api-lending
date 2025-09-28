@@ -770,27 +770,8 @@
                 </div>
             </div>
 
-            <!-- Recent Transactions (Aligned with upper cards) -->
-            <div class="row g-4 mt-4">
-                <div class="col-12">
-                    <div class="card glass-effect card-hover shadow-lg" style="border-radius: 16px;">
-                        <div class="card-body p-4">
-                            <div class="d-flex align-items-center mb-4">
-                                <div class="bg-info rounded-3 d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
-                                    <i class="bi bi-clock-history text-white"></i>
-                                </div>
-                                <h5 class="card-title mb-0">Recent Transactions</h5>
-                            </div>
-                            <div id="fundingHistory" style="max-height: 300px; overflow-y: auto; padding-right: 8px;">
-                                <div class="text-center text-muted py-4">
-                                    <p class="fw-medium mb-1">No transactions yet</p>
-                                    <p class="small">Fund an account to see history</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+
+
         </div>
     </div>
 
