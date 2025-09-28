@@ -4,109 +4,143 @@ namespace App\Http\Controllers\CB;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Stripe\Webhook;
-use Throwable;
+use Stripe\StripeClient;
+use Stripe\WebhookSignature;
+use App\Models\RepaymentAttempt;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 
-
-
-class StripeWebHookController extends Controller
+class StripeWebhookController extends Controller
 {
-
     public function handle(Request $request)
     {
-        $sig    = $request->header('Stripe-Signature');
-        $secret = config('services.stripe.webhook_secret');
+        $payload = $request->getContent();
+        $sigHeader = $request->header('Stripe-Signature');
+        $webhookSecret = config('services.stripe.webhook_secret');
 
         try {
-            $event = Webhook::constructEvent($request->getContent(), $sig, $secret);
-        } catch (Throwable $e) {
-            // signature fail
-            return response()->json(['error' => 'INVALID_SIGNATURE'], 400);
+            $event = \Stripe\Webhook::constructEvent(
+                $payload,
+                $sigHeader,
+                $webhookSecret
+            );
+        } catch (\Exception $e) {
+            Log::error('Webhook signature verification failed', ['error' => $e->getMessage()]);
+            return response()->json(['error' => 'Invalid signature'], 400);
         }
 
-        // Idempotency: skip if we processed this event_id already
-        $already = DB::table('stripe_webhook_events')->where('event_id', $event->id)->exists();
-        if ($already) {
-            return response()->json(['ok' => true, 'dedup' => true]);
+        // Check if we've processed this event already
+        if ($this->eventProcessed($event->id)) {
+            return response()->json(['status' => 'already_processed']);
         }
+
+        Log::info('Stripe webhook received', ['type' => $event->type, 'id' => $event->id]);
 
         try {
-            DB::beginTransaction();
-
             switch ($event->type) {
                 case 'payment_intent.succeeded':
-                    $pi = $event->data->object; // \Stripe\PaymentIntent
-
-                    $loanId     = (string)($pi->metadata->loan_id ?? '');
-                    $borrowerId = (string)($pi->metadata->borrower_id ?? '');
-                    $fiAcct     = (string)($pi->transfer_data->destination ?? $pi->on_behalf_of ?? '');
-                    $amount     = (int)$pi->amount; // minor units
-                    $currency   = (string)$pi->currency;
-                    $chargeId   = (string)($pi->latest_charge ?? '');
-
-                    // Find the matching pending installment
-                    $updated = DB::table('loan_installments')
-                        ->where('loan_id', $loanId)
-                        ->where('borrower_id', $borrowerId)
-                        ->where('fi_account_id', $fiAcct)
-                        ->where('currency', $currency)
-                        ->where('status', 'pending')
-                        // (Optional) also match amount to the cent to be strict:
-                        ->where('amount_cents', $amount)
-                        ->update([
-                            'status'                    => 'paid',
-                            'paid_at'                   => now(),
-                            'stripe_payment_intent_id'  => $pi->id,
-                            'stripe_charge_id'          => $chargeId ?: DB::raw('stripe_charge_id'),
-                            'updated_at'                => now(),
-                        ]);
-
-                    // If nothing matched, you might want to insert an audit row or log
-                    if ($updated === 0) {
-                        // fallback: mark by PI id if you created the row earlier with this id
-                        DB::table('loan_installments')
-                            ->whereNull('stripe_payment_intent_id')
-                            ->where('loan_id', $loanId)
-                            ->where('borrower_id', $borrowerId)
-                            ->limit(1)
-                            ->update([
-                                'status'                   => 'paid',
-                                'paid_at'                  => now(),
-                                'stripe_payment_intent_id' => $pi->id,
-                                'stripe_charge_id'         => $chargeId ?: null,
-                                'updated_at'               => now(),
-                            ]);
-                    }
-
+                    $this->handlePaymentIntentSucceeded($event->data->object);
                     break;
 
                 case 'payment_intent.payment_failed':
-                    $pi = $event->data->object;
-                    DB::table('loan_installments')
-                        ->where('loan_id', (string)$pi->metadata->loan_id)
-                        ->where('borrower_id', (string)$pi->metadata->borrower_id)
-                        ->where('status', 'pending')
-                        ->update([
-                            'status'     => 'failed',
-                            'updated_at' => now(),
-                        ]);
+                    $this->handlePaymentIntentFailed($event->data->object);
                     break;
 
-                    // add other events as needed (refunds/disputes)
+                case 'payment_intent.canceled':
+                    $this->handlePaymentIntentCanceled($event->data->object);
+                    break;
             }
 
-            // Record event id so we never process twice
-            DB::table('stripe_webhook_events')->insert(['event_id' => $event->id]);
-
-            DB::commit();
+            $this->markEventProcessed($event->id);
+            return response()->json(['status' => 'success']);
         } catch (Throwable $e) {
-            DB::rollBack();
-            // Log & return 200 so Stripe doesn't retry forever, or return 500 to have Stripe retry—your call.
-            \Log::error('Stripe webhook error: ' . $e->getMessage(), ['eventId' => $event->id]);
-            return response()->json(['error' => 'WEBHOOK_PROCESSING_FAILED'], 200);
+            Log::error('Webhook processing failed', [
+                'event_id' => $event->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json(['error' => 'Processing failed'], 500);
         }
+    }
 
-        return response()->json(['received' => true], 200);
+    private function handlePaymentIntentSucceeded($paymentIntent)
+    {
+        DB::transaction(function () use ($paymentIntent) {
+            $attempt = RepaymentAttempt::where('stripe_payment_intent_id', $paymentIntent->id)->first();
+
+            if (!$attempt) {
+                Log::warning('PaymentIntent succeeded but no repayment attempt found', ['pi_id' => $paymentIntent->id]);
+                return;
+            }
+
+            // Only process if not already succeeded (idempotency)
+            if ($attempt->status === 'succeeded') {
+                return;
+            }
+
+            $attempt->update([
+                'status' => 'succeeded',
+                'failure_reason' => null,
+            ]);
+
+            // Update your loan system - mark installment as paid
+            $this->markInstallmentAsPaid(
+                $attempt->loan_id,
+                $attempt->installment_number,
+                $attempt->amount_due
+            );
+
+            Log::info('Payment succeeded', [
+                'repayment_attempt_id' => $attempt->id,
+                'loan_id' => $attempt->loan_id,
+                'amount' => $attempt->amount_due
+            ]);
+        });
+    }
+
+    private function handlePaymentIntentFailed($paymentIntent)
+    {
+        $attempt = RepaymentAttempt::where('stripe_payment_intent_id', $paymentIntent->id)->first();
+
+        if ($attempt) {
+            $attempt->update([
+                'status' => 'failed',
+                'failure_reason' => $paymentIntent->last_payment_error->message ?? 'Payment failed',
+            ]);
+
+            // Notify customer about failed payment
+            $this->notifyPaymentFailure($attempt);
+        }
+    }
+
+    private function handlePaymentIntentCanceled($paymentIntent)
+    {
+        $attempt = RepaymentAttempt::where('stripe_payment_intent_id', $paymentIntent->id)->first();
+
+        if ($attempt) {
+            $attempt->update(['status' => 'canceled']);
+        }
+    }
+
+    private function eventProcessed(string $eventId): bool
+    {
+        return \App\Models\ProcessedWebhookEvent::where('event_id', $eventId)->exists();
+    }
+
+    private function markEventProcessed(string $eventId)
+    {
+        \App\Models\ProcessedWebhookEvent::create(['event_id' => $eventId]);
+    }
+
+    private function markInstallmentAsPaid(string $loanId, int $installmentNumber, int $amount)
+    {
+        // Your logic to update the loan system
+        // This would interact with your FI's database
+    }
+
+    private function notifyPaymentFailure(RepaymentAttempt $attempt)
+    {
+        // Send email/SMS to customer about failed payment
+        // Suggest updating payment method
     }
 }
