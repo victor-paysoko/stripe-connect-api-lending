@@ -296,6 +296,27 @@
         .fw-medium {
             font-weight: 500 !important;
         }
+
+        /* Refresh button animation */
+        .spin {
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Refresh button hover effect */
+        #refreshBalanceBtn:hover {
+            transform: scale(1.05);
+            transition: transform 0.2s ease;
+        }
+
+        #refreshBalanceBtn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body class="bg-light" x-data="{ darkMode: localStorage.getItem('darkMode') === 'true' }" x-init="$watch('darkMode', value => { localStorage.setItem('darkMode', value); document.documentElement.setAttribute('data-bs-theme', value ? 'dark' : 'light') })" :data-bs-theme="darkMode ? 'dark' : 'light'">
@@ -344,10 +365,24 @@
                     <p class="lead text-muted mx-auto" style="max-width: 600px;">Seamlessly transfer funds from a bank account to a lender's Stripe connected account with our secure and modern platform</p>
                 </div>
 
+                <!-- Main Content Tabs -->
+                <div class="row justify-content-center mb-4">
+                    <div class="col-auto">
+                        <div class="btn-group" role="group">
+                            <button type="button" class="btn btn-primary active" id="funding-tab" onclick="showMainTab('funding')">
+                                <i class="bi bi-currency-dollar me-2"></i>Payout Wizard
+                            </button>
+                            <button type="button" class="btn btn-outline-primary" id="architecture-tab" onclick="showMainTab('architecture')">
+                                <i class="bi bi-diagram-3 me-2"></i>Architectural Design
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Main Content Layout -->
                 <div class="row g-4">
                     <!-- Funding Wizard Section -->
-                    <div class="col-12 col-lg-8">
+                    <div class="col-12 col-lg-8" id="funding-content">
                         <!-- Funding Wizard -->
                         <div class="card glass-effect card-hover shadow-lg h-100" style="border-radius: 20px;">
                             <div class="card-body p-5">
@@ -357,19 +392,19 @@
                                         <div class="bg-primary rounded-3 d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
                                             <i class="bi bi-file-earmark-text text-white"></i>
                                         </div>
-                                        <h3 class="card-title mb-0">Funding Wizard</h3>
+                                        <h3 class="card-title mb-0">Payout Wizard</h3>
                                     </div>
 
                                     <!-- Step Indicator -->
                                     <div class="d-flex align-items-center">
                                         <div class="d-flex align-items-center me-2">
                                             <div id="step1-indicator" class="step-indicator bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px; font-size: 0.875rem; font-weight: 500;">1</div>
-                                            <span class="small text-muted">Account</span>
+                                            <span class="small text-muted">Lender</span>
                                         </div>
                                         <div class="bg-secondary bg-opacity-25 me-2" style="width: 32px; height: 2px;"></div>
                                         <div class="d-flex align-items-center">
                                             <div id="step2-indicator" class="step-indicator bg-secondary bg-opacity-25 text-muted rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 32px; height: 32px; font-size: 0.875rem; font-weight: 500;">2</div>
-                                            <span class="small text-muted">Bank</span>
+                                            <span class="small text-muted">Customer</span>
                                         </div>
                                     </div>
                                 </div>
@@ -378,48 +413,39 @@
                                     <!-- Step 1: Account Information -->
                                     <div id="step1" class="wizard-step">
                                         <div class="text-center mb-4">
-                                            <h4 class="h5 fw-semibold mb-2">Account Information</h4>
-                                            <p class="text-muted small">Enter the lender's account details and funding amount</p>
+                                            <h4 class="h5 fw-semibold mb-2">Lender Account</h4>
+                                            <p class="text-muted small">Enter the lender's account details and payout amount</p>
                                         </div>
 
+                                        <!-- Lender Account ID (from environment) -->
                                         <div class="row g-4 mb-4">
                                             <div class="col-12">
-                                                <label for="lender_account_id" class="form-label fw-semibold">
-                                                    <i class="bi bi-person-circle me-2"></i>Lender Account ID
-                                                </label>
-                                                <div class="input-group input-group-lg">
-                                                    <span class="input-group-text bg-primary bg-opacity-10 border-primary border-opacity-25">
-                                                        <i class="bi bi-person-badge text-primary"></i>
-                                                    </span>
-                                                    <input
-                                                        type="text"
-                                                        id="lender_account_id"
-                                                        name="lender_account_id"
-                                                        value="acct_1S5P3K8q5fe8D08C"
-                                                        class="form-control form-control-lg"
-                                                        placeholder="acct_1234567890"
-                                                        required
-                                                    >
+                                                <div class="alert alert-info d-flex align-items-center" role="alert">
+                                                    <i class="bi bi-info-circle me-2"></i>
+                                                    <div>
+                                                        <strong>Stripe Connect Account:</strong> {{ env('STRIPE_CONNECT_ACCOUNT_ID', 'acct_1SBeq6K4camGic0r') }}
+                                                        <br>
+                                                        <small class="text-muted">This is the Stripe Connect account that will be used for the payout to the customer</small>
+                                                    </div>
                                                 </div>
-                                                <div class="form-text">Enter the Stripe Connect account ID for the lender</div>
                                             </div>
 
                                             <div class="col-12">
                                                 <label for="amount" class="form-label fw-semibold">
-                                                    <i class="bi bi-currency-dollar me-2"></i>Amount (USD)
+                                                    <i class="bi bi-currency-dollar me-2"></i>Amount (USD) <span class="text-danger">*</span>
                                                 </label>
                                                 <div class="input-group input-group-lg">
                                                     <span class="input-group-text bg-primary bg-opacity-10 border-primary border-opacity-25">$</span>
                                                     <input
-                                                        type="number"
+                                                        type="text"
                                                         id="amount"
                                                         name="amount"
-                                                        min="100"
-                                                        step="0.01"
                                                         class="form-control form-control-lg"
-                                                        placeholder="1000.00"
-                                                        value="1000.00"
+                                                        placeholder="1,000.00"
+                                                        value="1,000.00"
                                                         required
+                                                        oninput="handleAmountInput(this)"
+                                                        onblur="formatCurrency(this); validateAmount(this)"
                                                     >
                                                 </div>
                                                 <div class="form-text">Minimum amount: $1.00 (100 cents)</div>
@@ -428,21 +454,16 @@
 
                                         <div class="mb-4">
                                             <label for="description" class="form-label fw-semibold">
-                                                <i class="bi bi-chat-text me-2"></i>Description
+                                                <i class="bi bi-chat-text me-2"></i>Description <span class="text-danger">*</span>
                                             </label>
-                                            <div class="input-group input-group-lg">
-                                                <span class="input-group-text bg-primary bg-opacity-10 border-primary border-opacity-25">
-                                                    <i class="bi bi-file-text text-primary"></i>
-                                                </span>
-                                                <input
-                                                    type="text"
-                                                    id="description"
-                                                    name="description"
-                                                    class="form-control form-control-lg"
-                                                    placeholder="Initial funding for lending account"
-                                                    value="Initial funding for lending account"
-                                                >
-                                            </div>
+                                            <textarea
+                                                id="description"
+                                                name="description"
+                                                class="form-control form-control-lg"
+                                                placeholder="Enter a description for this payout"
+                                                rows="3"
+                                                required
+                                            >Payout to customer</textarea>
                                         </div>
 
                                         <!-- Quick Amount Buttons -->
@@ -452,23 +473,23 @@
                                             </label>
                                             <div class="row g-3">
                                                 <div class="col-6 col-md-3">
-                                                    <button type="button" class="amount-btn btn btn-outline-primary w-100 py-3" data-amount="100">
-                                                        <i class="bi bi-currency-dollar me-2"></i>$100
+                                                    <button type="button" class="amount-btn btn btn-outline-primary w-100 py-3" data-amount="100.00">
+                                                        <i class="bi bi-currency-dollar me-2"></i>$100.00
                                                     </button>
                                                 </div>
                                                 <div class="col-6 col-md-3">
-                                                    <button type="button" class="amount-btn btn btn-outline-primary w-100 py-3" data-amount="500">
-                                                        <i class="bi bi-currency-dollar me-2"></i>$500
+                                                    <button type="button" class="amount-btn btn btn-outline-primary w-100 py-3" data-amount="500.00">
+                                                        <i class="bi bi-currency-dollar me-2"></i>$500.00
                                                     </button>
                                                 </div>
                                                 <div class="col-6 col-md-3">
-                                                    <button type="button" class="amount-btn btn btn-primary w-100 py-3" data-amount="1000">
-                                                        <i class="bi bi-currency-dollar me-2"></i>$1,000
+                                                    <button type="button" class="amount-btn btn btn-primary w-100 py-3" data-amount="1000.00">
+                                                        <i class="bi bi-currency-dollar me-2"></i>$1,000.00
                                                     </button>
                                                 </div>
                                                 <div class="col-6 col-md-3">
-                                                    <button type="button" class="amount-btn btn btn-outline-primary w-100 py-3" data-amount="5000">
-                                                        <i class="bi bi-currency-dollar me-2"></i>$5,000
+                                                    <button type="button" class="amount-btn btn btn-outline-primary w-100 py-3" data-amount="5000.00">
+                                                        <i class="bi bi-currency-dollar me-2"></i>$5,000.00
                                                     </button>
                                                 </div>
                                             </div>
@@ -478,15 +499,37 @@
                                     <!-- Step 2: Bank Account Information -->
                                     <div id="step2" class="wizard-step d-none">
                                         <div class="text-center mb-4">
-                                            <h4 class="h5 fw-semibold mb-2">Bank Account Information</h4>
-                                            <p class="text-muted small">Provide the bank account details for funding</p>
+                                            <h4 class="h5 fw-semibold mb-2">Customer Bank Account Information</h4>
+                                            <p class="text-muted small">Provide the customer's bank account details for payout</p>
                                         </div>
 
                                         <div class="row g-4 mb-4">
+                                            <!-- Customer Account ID -->
+                                            <div class="col-12">
+                                                <label for="customer_account_id" class="form-label fw-semibold">
+                                                    <i class="bi bi-person-circle me-2"></i>Customer Account ID <span class="text-danger">*</span>
+                                                </label>
+                                                <div class="input-group input-group-lg">
+                                                    <span class="input-group-text bg-primary bg-opacity-10 border-primary border-opacity-25">
+                                                        <i class="bi bi-person-badge text-primary"></i>
+                                                    </span>
+                                                    <input
+                                                        type="text"
+                                                        id="customer_account_id"
+                                                        name="customer_account_id"
+                                                        value="cus_T7ufQnqtX0ZBnZ"
+                                                        class="form-control form-control-lg"
+                                                        placeholder="cus_1234567890"
+                                                        required
+                                                    >
+                                                </div>
+                                                <div class="form-text">Enter the customer's unique identifier</div>
+                                            </div>
+
                                             <!-- Account Number -->
                                             <div class="col-12">
                                                 <label for="account_number" class="form-label fw-semibold">
-                                                    <i class="bi bi-credit-card me-2"></i>Account Number
+                                                    <i class="bi bi-credit-card me-2"></i>Account Number <span class="text-danger">*</span>
                                                 </label>
                                                 <div class="input-group input-group-lg">
                                                     <span class="input-group-text bg-primary bg-opacity-10 border-primary border-opacity-25">
@@ -496,17 +539,19 @@
                                                         type="text"
                                                         id="account_number"
                                                         name="account_number"
+                                                        value="000123456789"
                                                         class="form-control form-control-lg"
                                                         placeholder="000123456789"
                                                         required
                                                     >
                                                 </div>
+                                                <div class="form-text">Enter the customer's bank account number</div>
                                             </div>
 
                                             <!-- Routing Number -->
                                             <div class="col-12">
                                                 <label for="routing_number" class="form-label fw-semibold">
-                                                    <i class="bi bi-bank me-2"></i>Routing Number
+                                                    <i class="bi bi-bank me-2"></i>Routing Number <span class="text-danger">*</span>
                                                 </label>
                                                 <div class="input-group input-group-lg">
                                                     <span class="input-group-text bg-primary bg-opacity-10 border-primary border-opacity-25">
@@ -516,11 +561,13 @@
                                                         type="text"
                                                         id="routing_number"
                                                         name="routing_number"
+                                                        value="110000000"
                                                         class="form-control form-control-lg"
                                                         placeholder="110000000"
                                                         required
                                                     >
                                                 </div>
+                                                <div class="form-text">Enter the 9-digit routing number</div>
                                             </div>
                                         </div>
 
@@ -528,7 +575,7 @@
                                             <!-- Account Holder Name -->
                                             <div class="col-12">
                                                 <label for="account_holder_name" class="form-label fw-semibold">
-                                                    <i class="bi bi-person me-2"></i>Account Holder Name
+                                                    <i class="bi bi-person me-2"></i>Account Holder Name <span class="text-danger">*</span>
                                                 </label>
                                                 <div class="input-group input-group-lg">
                                                     <span class="input-group-text bg-primary bg-opacity-10 border-primary border-opacity-25">
@@ -538,17 +585,19 @@
                                                         type="text"
                                                         id="account_holder_name"
                                                         name="account_holder_name"
+                                                        value="Jane Smith"
                                                         class="form-control form-control-lg"
                                                         placeholder="John Doe"
                                                         required
                                                     >
                                                 </div>
+                                                <div class="form-text">Enter the name on the bank account</div>
                                             </div>
 
                                             <!-- Account Holder Type -->
                                             <div class="col-12">
                                                 <label for="account_holder_type" class="form-label fw-semibold">
-                                                    <i class="bi bi-building me-2"></i>Account Type
+                                                    <i class="bi bi-building me-2"></i>Account Holder Type <span class="text-danger">*</span>
                                                 </label>
                                                 <div class="input-group input-group-lg">
                                                     <span class="input-group-text bg-primary bg-opacity-10 border-primary border-opacity-25">
@@ -560,10 +609,12 @@
                                                         class="form-select form-select-lg"
                                                         required
                                                     >
-                                                        <option value="individual">Individual</option>
+                                                        <option value="">Select account type</option>
+                                                        <option value="individual" selected>Individual</option>
                                                         <option value="company">Company</option>
                                                     </select>
                                                 </div>
+                                                <div class="form-text">Select whether this is an individual or company account</div>
                                             </div>
                                         </div>
                                     </div>
@@ -593,7 +644,7 @@
                                             id="submitBtn"
                                             class="btn btn-success btn-lg d-none"
                                         >
-                                            <i class="bi bi-currency-dollar me-2"></i>Fund Account
+                                            <i class="bi bi-currency-dollar me-2"></i>Initiate Payout
                                         </button>
                                     </div>
                                 </form>
@@ -602,7 +653,7 @@
                     </div>
 
                     <!-- Account Information & Status Section -->
-                    <div class="col-12 col-lg-4">
+                    <div class="col-12 col-lg-4" id="status-content">
                         <div class="d-flex flex-column gap-4 h-100">
                             <!-- Account Balance -->
                             <div class="card glass-effect card-hover shadow-lg" style="border-radius: 16px;">
@@ -613,31 +664,35 @@
                                         </div>
                                         <h5 class="card-title mb-0">Account Balance</h5>
                                     </div>
-                                    <div class="d-flex justify-content-between align-items-center">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
                                         <div>
-                                            <p class="text-muted small mb-1">Available Balance</p>
-                                            <h3 class="fw-bold mb-0" id="availableBalance">$0.00</h3>
+                                            <p class="text-muted small mb-1">Total Balance</p>
+                                            <h3 class="fw-bold mb-0" id="totalBalance">$0.00</h3>
                                         </div>
                                         <button
+                                            id="refreshBalanceBtn"
                                             onclick="checkBalance()"
                                             class="btn btn-outline-secondary btn-sm"
+                                            title="Refresh balance"
                                         >
-                                            <i class="bi bi-arrow-clockwise"></i>
+                                            <i id="refreshBalanceIcon" class="bi bi-arrow-clockwise"></i>
                                         </button>
                                     </div>
-                                </div>
-                            </div>
 
-                            <!-- Funding History -->
-                            <div class="card glass-effect card-hover shadow-lg" style="border-radius: 16px;">
-                                <div class="card-body p-4">
-                                    <div class="d-flex align-items-center mb-4">
-                                        <h5 class="card-title mb-0">Recent Transactions</h5>
-                                    </div>
-                                    <div id="fundingHistory">
-                                        <div class="text-center text-muted py-4">
-                                            <p class="fw-medium mb-1">No transactions yet</p>
-                                            <p class="small">Fund an account to see history</p>
+                                    <!-- Balance Breakdown -->
+                                    <div class="balance-breakdown">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span class="text-muted small">Available:</span>
+                                            <span class="fw-semibold text-success" id="availableBalance">$0.00</span>
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <span class="text-muted small">Pending:</span>
+                                            <span class="fw-semibold text-warning" id="pendingBalance">$0.00</span>
+                                        </div>
+                                        <hr class="my-2">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span class="text-muted small">Total:</span>
+                                            <span class="fw-bold text-primary" id="totalBalanceBreakdown">$0.00</span>
                                         </div>
                                     </div>
                                 </div>
@@ -680,6 +735,358 @@
                                                 <i class="bi bi-play-fill me-1"></i>Initiate
                                             </button>
                                         </div>
+                                        <div class="d-flex justify-content-between align-items-center p-3 bg-success bg-opacity-10 rounded-3" style="border: 1px solid rgba(25, 135, 84, 0.2);">
+                                            <div class="d-flex align-items-center">
+                                                <div class="bg-success rounded-circle me-3" style="width: 10px; height: 10px;"></div>
+                                                <span class="small fw-medium">Payout API</span>
+                                            </div>
+                                            <button class="btn btn-success btn-sm px-3 py-1" onclick="initiatePayoutAPI()">
+                                                <i class="bi bi-play-fill me-1"></i>Initiate
+                                            </button>
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center p-3 bg-secondary bg-opacity-10 rounded-3" style="border: 1px solid rgba(108, 117, 125, 0.2);">
+                                            <div class="d-flex align-items-center">
+                                                <div class="bg-secondary rounded-circle me-3" style="width: 10px; height: 10px;"></div>
+                                                <span class="small fw-medium">Direct Charge API</span>
+                                            </div>
+                                            <button class="btn btn-secondary btn-sm px-3 py-1" onclick="initiateDirectChargeAPI()">
+                                                <i class="bi bi-play-fill me-1"></i>Initiate
+                                            </button>
+                                        </div>
+                                        <div class="d-flex justify-content-between align-items-center p-3 bg-dark bg-opacity-10 rounded-3" style="border: 1px solid rgba(33, 37, 41, 0.2);">
+                                            <div class="d-flex align-items-center">
+                                                <div class="bg-dark rounded-circle me-3" style="width: 10px; height: 10px;"></div>
+                                                <span class="small fw-medium">Can Fund API</span>
+                                            </div>
+                                            <button class="btn btn-dark btn-sm px-3 py-1" onclick="initiateCanFundAPI()">
+                                                <i class="bi bi-play-fill me-1"></i>Initiate
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Transactions (Aligned with upper cards) -->
+            <div class="row g-4 mt-4">
+                <div class="col-12">
+                    <div class="card glass-effect card-hover shadow-lg" style="border-radius: 16px;">
+                        <div class="card-body p-4">
+                            <div class="d-flex align-items-center mb-4">
+                                <div class="bg-info rounded-3 d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                    <i class="bi bi-clock-history text-white"></i>
+                                </div>
+                                <h5 class="card-title mb-0">Recent Transactions</h5>
+                            </div>
+                            <div id="fundingHistory" style="max-height: 300px; overflow-y: auto; padding-right: 8px;">
+                                <div class="text-center text-muted py-4">
+                                    <p class="fw-medium mb-1">No transactions yet</p>
+                                    <p class="small">Fund an account to see history</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Architectural Design Content (Hidden by default) -->
+    <div class="container-fluid py-5" id="architecture-content" style="display: none;">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-12 col-lg-10">
+                    <!-- Architecture Header -->
+                    <div class="text-center mb-5">
+                        <div class="bg-primary rounded-4 d-inline-flex align-items-center justify-content-center mb-4 floating-animation" style="width: 80px; height: 80px;">
+                            <i class="bi bi-diagram-3 text-white" style="font-size: 2.5rem;"></i>
+                        </div>
+                        {{-- <h2 class="display-4 fw-bold mb-3 gradient-text">Stripe Connect B2C Architecture</h2> --}}
+                        <p class="lead text-muted mx-auto" style="max-width: 600px;">Understanding the flow of funds between customers, Stripe Connect, and lenders in both directions</p>
+                    </div>
+
+                    <!-- Architecture Content -->
+                    <div class="card glass-effect card-hover shadow-lg" style="border-radius: 20px;">
+                        <div class="card-body p-5">
+                            <!-- Flow Diagram -->
+                            <div class="text-center mb-5">
+                                <div class="d-flex flex-column align-items-center">
+                                    <!-- Customer to Lender Flow -->
+                                    <div class="d-flex align-items-center mb-4">
+                                        <div class="bg-primary rounded-3 p-4 me-4" style="min-width: 140px;">
+                                            <i class="bi bi-person-fill text-white d-block text-center mb-2" style="font-size: 2rem;"></i>
+                                            <h6 class="text-white d-block text-center mb-0">Customer</h6>
+                                        </div>
+                                        <i class="bi bi-arrow-right text-success me-4" style="font-size: 2rem;"></i>
+                                        <div class="bg-info rounded-3 p-4 me-4" style="min-width: 140px;">
+                                            <i class="bi bi-shield-check text-white d-block text-center mb-2" style="font-size: 2rem;"></i>
+                                            <h6 class="text-white d-block text-center mb-0">Stripe Connect</h6>
+                                        </div>
+                                        <i class="bi bi-arrow-right text-success me-4" style="font-size: 2rem;"></i>
+                                        <div class="bg-warning rounded-3 p-4" style="min-width: 140px;">
+                                            <i class="bi bi-building text-white d-block text-center mb-2" style="font-size: 2rem;"></i>
+                                            <h6 class="text-white d-block text-center mb-0">Lender</h6>
+                                        </div>
+                                    </div>
+
+                                    <!-- Flow Description -->
+                                    <div class="bg-light rounded-3 p-4 mb-4" style="max-width: 700px;">
+                                        <h5 class="text-success mb-3">Customer → Lender Flow (Funding)</h5>
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <div class="d-flex align-items-start">
+                                                    <span class="badge bg-success rounded-circle me-3 mt-1" style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">1</span>
+                                                    <div>
+                                                        <h6 class="mb-1">Customer Request</h6>
+                                                        <p class="text-muted mb-0 small">Customer initiates funding request through the platform</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="d-flex align-items-start">
+                                                    <span class="badge bg-success rounded-circle me-3 mt-1" style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">2</span>
+                                                    <div>
+                                                        <h6 class="mb-1">ACH Processing</h6>
+                                                        <p class="text-muted mb-0 small">Stripe Connect processes ACH transfer from customer's bank</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="d-flex align-items-start">
+                                                    <span class="badge bg-success rounded-circle me-3 mt-1" style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">3</span>
+                                                    <div>
+                                                        <h6 class="mb-1">Fund Transfer</h6>
+                                                        <p class="text-muted mb-0 small">Funds transferred to lender's connected account</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="d-flex align-items-start">
+                                                    <span class="badge bg-success rounded-circle me-3 mt-1" style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">4</span>
+                                                    <div>
+                                                        <h6 class="mb-1">Completion</h6>
+                                                        <p class="text-muted mb-0 small">Lender receives funds in 3-5 business days</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Lender to Customer Flow -->
+                                    <div class="d-flex align-items-center mb-4">
+                                        <div class="bg-warning rounded-3 p-4 me-4" style="min-width: 140px;">
+                                            <i class="bi bi-building text-white d-block text-center mb-2" style="font-size: 2rem;"></i>
+                                            <h6 class="text-white d-block text-center mb-0">Lender</h6>
+                                        </div>
+                                        <i class="bi bi-arrow-left text-success me-4" style="font-size: 2rem;"></i>
+                                        <div class="bg-info rounded-3 p-4 me-4" style="min-width: 140px;">
+                                            <i class="bi bi-shield-check text-white d-block text-center mb-2" style="font-size: 2rem;"></i>
+                                            <h6 class="text-white d-block text-center mb-0">Stripe Connect</h6>
+                                        </div>
+                                        <i class="bi bi-arrow-left text-success me-4" style="font-size: 2rem;"></i>
+                                        <div class="bg-primary rounded-3 p-4" style="min-width: 140px;">
+                                            <i class="bi bi-person-fill text-white d-block text-center mb-2" style="font-size: 2rem;"></i>
+                                            <h6 class="text-white d-block text-center mb-0">Customer</h6>
+                                        </div>
+                                    </div>
+
+                                    <!-- Reverse Flow Description -->
+                                    <div class="bg-light rounded-3 p-4" style="max-width: 700px;">
+                                        <h5 class="text-success mb-3">Lender → Customer Flow (Payout)</h5>
+                                        <div class="row g-3">
+                                            <div class="col-md-6">
+                                                <div class="d-flex align-items-start">
+                                                    <span class="badge bg-success rounded-circle me-3 mt-1" style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">1</span>
+                                                    <div>
+                                                        <h6 class="mb-1">Payout Initiation</h6>
+                                                        <p class="text-muted mb-0 small">Lender initiates payout to customer's account</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="d-flex align-items-start">
+                                                    <span class="badge bg-success rounded-circle me-3 mt-1" style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">2</span>
+                                                    <div>
+                                                        <h6 class="mb-1">Processing</h6>
+                                                        <p class="text-muted mb-0 small">Stripe Connect processes payout request</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="d-flex align-items-start">
+                                                    <span class="badge bg-success rounded-circle me-3 mt-1" style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">3</span>
+                                                    <div>
+                                                        <h6 class="mb-1">Bank Transfer</h6>
+                                                        <p class="text-muted mb-0 small">Funds transferred to customer's bank account</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="d-flex align-items-start">
+                                                    <span class="badge bg-success rounded-circle me-3 mt-1" style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">4</span>
+                                                    <div>
+                                                        <h6 class="mb-1">Receipt</h6>
+                                                        <p class="text-muted mb-0 small">Customer receives funds in 1-2 business days</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Payout Flow Section -->
+                            <div class="mt-5">
+                                <div class="text-center mb-4">
+                                    <h4 class="fw-bold text-success">Payout Flow Architecture</h4>
+                                    <p class="text-muted">Understanding how funds are distributed from lenders to customers</p>
+                                </div>
+
+                                <!-- Automatic Payouts -->
+                                <div class="mb-5">
+                                    <h5 class="fw-bold text-primary mb-3">1. Automatic Payouts</h5>
+                                    <div class="bg-light rounded-3 p-4">
+                                        <div class="d-flex align-items-center justify-content-between mb-3">
+                                            <div class="bg-primary rounded-3 p-3 text-center" style="min-width: 140px;">
+                                                <i class="bi bi-building text-white d-block mb-2" style="font-size: 2rem;"></i>
+                                                <h6 class="text-white mb-0">Connected Account</h6>
+                                            </div>
+                                            <i class="bi bi-arrow-right text-success" style="font-size: 2rem;"></i>
+                                            <div class="bg-info rounded-3 p-3 text-center" style="min-width: 140px;">
+                                                <i class="bi bi-shield-check text-white d-block mb-2" style="font-size: 2rem;"></i>
+                                                <h6 class="text-white mb-0">Platform Stripe Account</h6>
+                                            </div>
+                                            <i class="bi bi-arrow-right text-success" style="font-size: 2rem;"></i>
+                                            <div class="bg-warning rounded-3 p-3 text-center" style="min-width: 140px;">
+                                                <i class="bi bi-bank text-white d-block mb-2" style="font-size: 2rem;"></i>
+                                                <h6 class="text-white mb-0">Seller Bank Account</h6>
+                                            </div>
+                                        </div>
+
+                                        <div class="row g-3">
+                                            <div class="col-md-4">
+                                                <div class="d-flex align-items-start">
+                                                    <span class="badge bg-primary rounded-circle me-3 mt-1" style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">1</span>
+                                                    <div>
+                                                        <h6 class="mb-1">Funds Available</h6>
+                                                        <p class="text-muted mb-0 small">Funds are made available from the connected account to the platform's Stripe account</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="d-flex align-items-start">
+                                                    <span class="badge bg-primary rounded-circle me-3 mt-1" style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">2</span>
+                                                    <div>
+                                                        <h6 class="mb-1">Automatic Payout</h6>
+                                                        <p class="text-muted mb-0 small">Platform automatically initiates payouts to seller's bank account (Daily/Weekly)</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="d-flex align-items-start">
+                                                    <span class="badge bg-primary rounded-circle me-3 mt-1" style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">3</span>
+                                                    <div>
+                                                        <h6 class="mb-1">Funds Received</h6>
+                                                        <p class="text-muted mb-0 small">Connected account is updated once funds are received by the seller's bank</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Manual Payouts -->
+                                <div class="mb-5">
+                                    <h5 class="fw-bold text-primary mb-3">2. Manual Payouts</h5>
+                                    <div class="bg-light rounded-3 p-4">
+                                        <div class="d-flex align-items-center justify-content-between mb-3">
+                                            <div class="bg-success rounded-3 p-3 text-center" style="min-width: 120px;">
+                                                <i class="bi bi-phone text-white d-block mb-2" style="font-size: 1.5rem;"></i>
+                                                <h6 class="text-white mb-0 small">Platform App</h6>
+                                            </div>
+                                            <i class="bi bi-arrow-right text-success" style="font-size: 2rem;"></i>
+                                            <div class="bg-info rounded-3 p-3 text-center" style="min-width: 120px;">
+                                                <i class="bi bi-shield-check text-white d-block mb-2" style="font-size: 1.5rem;"></i>
+                                                <h6 class="text-white mb-0 small">Platform Stripe Account</h6>
+                                            </div>
+                                            <i class="bi bi-arrow-right text-success" style="font-size: 2rem;"></i>
+                                            <div class="bg-primary rounded-3 p-3 text-center" style="min-width: 120px;">
+                                                <i class="bi bi-building text-white d-block mb-2" style="font-size: 1.5rem;"></i>
+                                                <h6 class="text-white mb-0 small">Connected Account</h6>
+                                            </div>
+                                            <i class="bi bi-arrow-right text-success" style="font-size: 2rem;"></i>
+                                            <div class="bg-warning rounded-3 p-3 text-center" style="min-width: 120px;">
+                                                <i class="bi bi-bank text-white d-block mb-2" style="font-size: 1.5rem;"></i>
+                                                <h6 class="text-white mb-0 small">Seller Bank Account</h6>
+                                            </div>
+                                        </div>
+
+                                        <div class="row g-3">
+                                            <div class="col-md-3">
+                                                <div class="d-flex align-items-start">
+                                                    <span class="badge bg-success rounded-circle me-3 mt-1" style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">1</span>
+                                                    <div>
+                                                        <h6 class="mb-1">Initiate Payout</h6>
+                                                        <p class="text-muted mb-0 small">Payout request is manually triggered from the platform's application</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="d-flex align-items-start">
+                                                    <span class="badge bg-success rounded-circle me-3 mt-1" style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">2</span>
+                                                    <div>
+                                                        <h6 class="mb-1">Transfer Funds</h6>
+                                                        <p class="text-muted mb-0 small">Funds are transferred from platform's Stripe account to connected account</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="d-flex align-items-start">
+                                                    <span class="badge bg-success rounded-circle me-3 mt-1" style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">3</span>
+                                                    <div>
+                                                        <h6 class="mb-1">Payout to Bank</h6>
+                                                        <p class="text-muted mb-0 small">Connected account initiates payout of transferred funds to seller's bank</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="d-flex align-items-start">
+                                                    <span class="badge bg-success rounded-circle me-3 mt-1" style="width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">4</span>
+                                                    <div>
+                                                        <h6 class="mb-1">Funds Received</h6>
+                                                        <p class="text-muted mb-0 small">Connected account is updated once funds are received by seller's bank</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Key Components -->
+                            <div class="row g-4">
+                                <div class="col-md-4">
+                                    <div class="text-center p-4 bg-primary bg-opacity-10 rounded-3 h-100">
+                                        <i class="bi bi-person-fill text-primary mb-3" style="font-size: 3rem;"></i>
+                                        <h5 class="text-primary">Customer</h5>
+                                        <p class="text-muted">End user requesting funding or receiving payouts through the platform</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="text-center p-4 bg-info bg-opacity-10 rounded-3 h-100">
+                                        <i class="bi bi-shield-check text-info mb-3" style="font-size: 3rem;"></i>
+                                        <h5 class="text-info">Stripe Connect</h5>
+                                        <p class="text-muted">Payment platform handling transfers, compliance, and security</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="text-center p-4 bg-warning bg-opacity-10 rounded-3 h-100">
+                                        <i class="bi bi-building text-warning mb-3" style="font-size: 3rem;"></i>
+                                        <h5 class="text-warning">Lender</h5>
+                                        <p class="text-muted">Financial institution providing funding services and payouts</p>
                                     </div>
                                 </div>
                             </div>
@@ -691,16 +1098,14 @@
     </div>
 
     <!-- Loading Overlay -->
-    <div id="loadingOverlay" class="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50 d-none" style="z-index: 9999;">
-        <div class="position-relative top-50 start-50 translate-middle">
-            <div class="card glass-effect shadow-lg" style="width: 400px; border-radius: 20px;">
-                <div class="card-body text-center p-5">
-                    <div class="spinner-border text-primary mb-4" role="status" style="width: 3rem; height: 3rem;">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                    <h5 class="card-title fw-bold">Processing Request</h5>
-                    <p class="card-text text-muted">Please wait while we process your funding request...</p>
+    <div id="loadingOverlay" class="position-fixed top-0 start-0 w-100 h-100 bg-dark bg-opacity-50 d-none d-flex align-items-center justify-content-center" style="z-index: 9999;">
+        <div class="card glass-effect shadow-lg" style="width: 400px; border-radius: 20px;">
+            <div class="card-body text-center p-5">
+                <div class="spinner-border text-primary mb-4" role="status" style="width: 3rem; height: 3rem;">
+                    <span class="visually-hidden">Loading...</span>
                 </div>
+                <h5 class="card-title fw-bold">Processing Request</h5>
+                <p class="card-text text-muted">Please wait while we process your payout request...</p>
             </div>
         </div>
     </div>
@@ -782,84 +1187,53 @@
                             <p class="text-muted">Quick answers for common funding questions</p>
                         </div>
 
-                        <!-- Help Tabs -->
-                        <div class="row g-2 mb-3">
-                        <div class="col-6 col-md-3">
-                            <button class="help-tab btn btn-success w-100 py-2" data-target="process">
-                                <i class="bi bi-arrow-right-circle me-2"></i>
-                                <span class="small">Process</span>
-                            </button>
-                        </div>
-                            <div class="col-6 col-md-3">
-                                <button class="help-tab btn btn-outline-success w-100 py-2" data-target="timing">
-                                    <i class="bi bi-clock me-2"></i>
-                                    <span class="small">Timing</span>
-                                </button>
-                            </div>
-                            <div class="col-6 col-md-3">
-                                <button class="help-tab btn btn-outline-success w-100 py-2" data-target="requirements">
-                                    <i class="bi bi-check-circle me-2"></i>
-                                    <span class="small">Requirements</span>
-                                </button>
-                            </div>
-                            <div class="col-6 col-md-3">
-                                <button class="help-tab btn btn-outline-success w-100 py-2" data-target="troubleshooting">
-                                    <i class="bi bi-exclamation-triangle me-2"></i>
-                                    <span class="small">Issues</span>
-                                </button>
-                            </div>
-                        </div>
-
                         <!-- Help Content -->
-                        <div class="row g-3">
-                            <!-- Process -->
-                            <div class="col-12 help-content" id="process" style="display: block;">
-                                <div class="card glass-effect shadow-sm" style="border-radius: 12px;">
-                                    <div class="card-body p-3">
-                                        <div class="d-flex align-items-center mb-2">
-                                            <i class="bi bi-arrow-right-circle text-success me-2"></i>
-                                            <h6 class="card-title mb-0 text-success">Funding Process</h6>
-                                        </div>
-                                        <p class="text-muted mb-0 small">1. Enter lender account ID and amount 2. Provide bank details 3. ACH transfer initiates 4. Funds appear in 3-5 business days</p>
-                                    </div>
+                        <div class="card glass-effect shadow-sm" style="border-radius: 12px;">
+                            <div class="card-body p-4">
+                                <div class="d-flex align-items-center mb-3">
+                                    <i class="bi bi-book text-success me-2"></i>
+                                    <h6 class="card-title mb-0 text-success">Complete Funding Guide</h6>
                                 </div>
-                            </div>
 
-                            <!-- Timing -->
-                            <div class="col-12 help-content" id="timing" style="display: none;">
-                                <div class="card glass-effect shadow-sm" style="border-radius: 12px;">
-                                    <div class="card-body p-3">
-                                        <div class="d-flex align-items-center mb-2">
-                                            <i class="bi bi-clock text-success me-2"></i>
-                                            <h6 class="card-title mb-0 text-success">Processing Times</h6>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <div class="d-flex align-items-start mb-3">
+                                            <i class="bi bi-arrow-right-circle text-success me-2 mt-1"></i>
+                                            <div>
+                                                <h6 class="mb-1 text-success">Funding Process</h6>
+                                                <p class="text-muted mb-0 small">1. Enter lender account ID and amount 2. Provide bank details 3. ACH transfer initiates 4. Funds appear in 3-5 business days</p>
+                                            </div>
                                         </div>
-                                        <p class="text-muted mb-0 small">ACH transfers: 3-5 business days • Bank verification: 1-2 business days • Minimum amount: $1.00</p>
                                     </div>
-                                </div>
-                            </div>
 
-                            <!-- Requirements -->
-                            <div class="col-12 help-content" id="requirements" style="display: none;">
-                                <div class="card glass-effect shadow-sm" style="border-radius: 12px;">
-                                    <div class="card-body p-3">
-                                        <div class="d-flex align-items-center mb-2">
-                                            <i class="bi bi-check-circle text-success me-2"></i>
-                                            <h6 class="card-title mb-0 text-success">Requirements</h6>
+                                    <div class="col-md-6">
+                                        <div class="d-flex align-items-start mb-3">
+                                            <i class="bi bi-clock text-success me-2 mt-1"></i>
+                                            <div>
+                                                <h6 class="mb-1 text-success">Processing Times</h6>
+                                                <p class="text-muted mb-0 small">ACH transfers: 3-5 business days • Bank verification: 1-2 business days • Minimum amount: $1.00</p>
+                                            </div>
                                         </div>
-                                        <p class="text-muted mb-0 small">Valid Stripe Connect account • US bank account • Correct routing/account numbers • Account holder name matches bank records</p>
                                     </div>
-                                </div>
-                            </div>
 
-                            <!-- Troubleshooting -->
-                            <div class="col-12 help-content" id="troubleshooting" style="display: none;">
-                                <div class="card glass-effect shadow-sm" style="border-radius: 12px;">
-                                    <div class="card-body p-3">
-                                        <div class="d-flex align-items-center mb-2">
-                                            <i class="bi bi-exclamation-triangle text-success me-2"></i>
-                                            <h6 class="card-title mb-0 text-success">Common Issues</h6>
+                                    <div class="col-md-6">
+                                        <div class="d-flex align-items-start mb-3">
+                                            <i class="bi bi-check-circle text-success me-2 mt-1"></i>
+                                            <div>
+                                                <h6 class="mb-1 text-success">Requirements</h6>
+                                                <p class="text-muted mb-0 small">Valid Stripe Connect account • US bank account • Correct routing/account numbers • Account holder name matches bank records</p>
+                                            </div>
                                         </div>
-                                        <p class="text-muted mb-0 small">Verify account details • Ensure bank supports ACH • Check account balance • Contact bank if transfer fails</p>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <div class="d-flex align-items-start mb-3">
+                                            <i class="bi bi-exclamation-triangle text-success me-2 mt-1"></i>
+                                            <div>
+                                                <h6 class="mb-1 text-success">Common Issues</h6>
+                                                <p class="text-muted mb-0 small">Verify account details • Ensure bank supports ACH • Check account balance • Contact bank if transfer fails</p>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -892,7 +1266,7 @@
                     <div class="col-md-6">
                         <p class="mb-0 text-muted small">
                             <i class="bi bi-shield-check me-1"></i>
-                            Secure funding powered by Stripe Connect
+                            Secure payouts powered by Stripe Connect
                         </p>
                     </div>
                     <div class="col-md-6 text-md-end">
@@ -922,8 +1296,9 @@
 
             const formData = new FormData(this);
             const data = {
-                lender_account_id: formData.get('lender_account_id'),
-                amount: Math.round(parseFloat(formData.get('amount')) * 100), // Convert to cents
+                lender_account_id: '{{ env("STRIPE_CONNECT_ACCOUNT_ID", "acct_1SBeq6K4camGic0r") }}',
+                customer_account_id: formData.get('customer_account_id'),
+                amount: getAmountValue(), // Convert to cents using currency formatting
                 currency: 'usd',
                 bank_account: {
                     account_number: formData.get('account_number'),
@@ -936,8 +1311,10 @@
             };
 
             try {
+                console.log('🚀 Initiating payout with data:', data);
                 showLoading();
-                const response = await fetch(`${API_BASE_URL}/funding/fund-account-test`, {
+
+                const response = await fetch(`${API_BASE_URL}/payout/initiate`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -946,63 +1323,147 @@
                     body: JSON.stringify(data)
                 });
 
+                console.log('📡 Response status:', response.status);
+                console.log('📡 Response headers:', Object.fromEntries(response.headers.entries()));
+
                 const result = await response.json();
+                console.log('📦 Response data:', result);
+                console.log('📦 Direct payout data:', result.data?.direct_payout);
+
                 hideLoading();
 
                 if (result.success) {
-                    showMessage('success', 'Funding Successful!', `Account funded with $${(data.amount / 100).toFixed(2)}`);
-                    // Refresh balance and history
-                    checkBalance();
+                    console.log('✅ Payout successful');
+                    showMessage('success', 'Payout Successful!', `Payout of $${(data.amount / 100).toFixed(2)} initiated successfully`);
+
+                    // Update balance with simulated values from payout response
+                    if (result.data && result.data.direct_payout) {
+                        const payout = result.data.direct_payout;
+                        const after = payout.connected_account_balance_after;
+
+                        console.log('🔄 Updating balance with simulated values:', after);
+
+                        // Set flag to prevent balance refresh
+                        balanceUpdatedFromPayout = true;
+
+                        // Update UI with simulated balance
+                        document.getElementById('totalBalance').textContent = '$' + (after.total / 100).toFixed(2);
+                        document.getElementById('availableBalance').textContent = '$' + (after.available / 100).toFixed(2);
+                        document.getElementById('pendingBalance').textContent = '$' + (after.pending / 100).toFixed(2);
+                        document.getElementById('totalBalanceBreakdown').textContent = '$' + (after.total / 100).toFixed(2);
+
+                        console.log('✅ Balance updated in UI');
+
+                        // Reset flag after 5 seconds to allow future balance checks
+                        setTimeout(() => {
+                            balanceUpdatedFromPayout = false;
+                            console.log('🔄 Balance flag reset - future checks allowed');
+                        }, 5000);
+                    } else {
+                        console.log('❌ No direct_payout data found in response');
+                    }
+
+                    // Refresh history
                     loadFundingHistory();
+                } else if (result.data && result.data.total_balance !== undefined) {
+                    console.log('❌ Insufficient balance');
+                    showMessage('error', 'Insufficient Balance', `Lender account has insufficient funds. Total Balance: $${(result.data.total_balance / 100).toFixed(2)}, Required: $${(data.amount / 100).toFixed(2)}`);
                 } else {
-                    showMessage('error', 'Funding Failed', result.error || 'An error occurred');
+                    console.log('❌ Payout failed:', result);
+                    showMessage('error', 'Payout Failed', result.error || result.message || 'An error occurred');
                 }
             } catch (error) {
+                console.error('💥 Network/API Error:', error);
                 hideLoading();
                 showMessage('error', 'Network Error', 'Unable to connect to the API');
-                console.error('Error:', error);
             }
         });
 
+        // Flag to prevent balance refresh after payout
+        let balanceUpdatedFromPayout = false;
+
         // Check balance function
         async function checkBalance() {
-            const lenderAccountId = document.getElementById('lender_account_id').value;
+            const lenderAccountId = '{{ env("STRIPE_CONNECT_ACCOUNT_ID", "acct_1SBeq6K4camGic0r") }}';
             if (!lenderAccountId) return;
+
+            // Skip balance check if we just updated from payout
+            if (balanceUpdatedFromPayout) {
+                console.log('⏭️ Skipping balance check - using simulated values');
+                return;
+            }
+
+            const refreshBtn = document.getElementById('refreshBalanceBtn');
+            const refreshIcon = document.getElementById('refreshBalanceIcon');
+
+            // Show loading state
+            refreshBtn.disabled = true;
+            refreshIcon.className = 'bi bi-arrow-clockwise spin';
+            refreshBtn.title = 'Refreshing...';
 
             try {
                 const response = await fetch(`${API_BASE_URL}/funding/balance/${lenderAccountId}`);
                 const result = await response.json();
 
-                if (result.available !== undefined) {
-                    document.getElementById('availableBalance').textContent = `$${(result.available / 100).toFixed(2)}`;
+                if (result.data) {
+                    // Update total balance (main display)
+                    if (result.data.total_balance) {
+                        document.getElementById('totalBalance').textContent = result.data.total_balance.formatted;
+                    }
+
+                    // Update balance breakdown
+                    if (result.data.available) {
+                        document.getElementById('availableBalance').textContent = result.data.available.formatted;
+                    }
+                    if (result.data.pending) {
+                        document.getElementById('pendingBalance').textContent = result.data.pending.formatted;
+                    }
+                    if (result.data.total_balance) {
+                        document.getElementById('totalBalanceBreakdown').textContent = result.data.total_balance.formatted;
+                    }
+
+                    // Show success feedback
+                    refreshIcon.className = 'bi bi-check-circle text-success';
+                    setTimeout(() => {
+                        refreshIcon.className = 'bi bi-arrow-clockwise';
+                    }, 1000);
                 }
             } catch (error) {
                 console.error('Error checking balance:', error);
+                // Show error feedback
+                refreshIcon.className = 'bi bi-exclamation-circle text-danger';
+                setTimeout(() => {
+                    refreshIcon.className = 'bi bi-arrow-clockwise';
+                }, 2000);
+            } finally {
+                // Reset button state
+                refreshBtn.disabled = false;
+                refreshBtn.title = 'Refresh balance';
             }
         }
 
         // Load funding history
         async function loadFundingHistory() {
-            const lenderAccountId = document.getElementById('lender_account_id').value;
+            const lenderAccountId = '{{ env("STRIPE_CONNECT_ACCOUNT_ID", "acct_1SBeq6K4camGic0r") }}';
             if (!lenderAccountId) return;
 
             try {
-                const response = await fetch(`${API_BASE_URL}/funding/history/${lenderAccountId}`);
+                const response = await fetch(`${API_BASE_URL}/funding/transactions/${lenderAccountId}`);
                 const result = await response.json();
 
                 const historyContainer = document.getElementById('fundingHistory');
-                if (result.history && result.history.length > 0) {
-                    historyContainer.innerHTML = result.history.map(transaction => `
-                        <div class="d-flex justify-content-between align-items-center p-3 mb-3 bg-light bg-opacity-50 rounded-3 border">
+                if (result.data && result.data.transactions && result.data.transactions.length > 0) {
+                    historyContainer.innerHTML = result.data.transactions.map(transaction => `
+                        <div class="d-flex justify-content-between align-items-center p-3 mb-2 bg-light bg-opacity-50 rounded-3 border" style="min-height: 60px;">
                             <div>
-                                <p class="fw-medium mb-1 text-dark">${transaction.description || 'Funding'}</p>
-                                <p class="small text-muted mb-0">${new Date(transaction.created * 1000).toLocaleDateString()}</p>
+                                <p class="fw-medium mb-1 text-dark small">${transaction.description || 'Transaction'}</p>
+                                <p class="small text-muted mb-0">${new Date(transaction.created).toLocaleDateString()} • ${transaction.type === 'charge' ? 'Charge' : 'Payout'}</p>
                             </div>
                             <div class="text-end">
-                                <p class="fw-semibold mb-1 text-dark">$${(transaction.amount / 100).toFixed(2)}</p>
-                                <span class="badge ${
-                                    transaction.status === 'succeeded' ? 'bg-success' :
-                                    transaction.status === 'processing' ? 'bg-warning' :
+                                <p class="fw-semibold mb-1 text-dark small">${transaction.formatted_amount}</p>
+                                <span class="badge badge-sm ${
+                                    transaction.succeeded ? 'bg-success' :
+                                    transaction.status === 'pending' ? 'bg-warning' :
                                     'bg-danger'
                                 }">
                                     ${transaction.status}
@@ -1043,6 +1504,10 @@
                 iconContainer.className = 'rounded-3 me-3 d-flex align-items-center justify-content-center bg-success bg-opacity-10';
                 icon.className = 'bi bi-check-circle-fill text-success';
                 container.classList.remove('d-none');
+            } else if (type === 'warning') {
+                iconContainer.className = 'rounded-3 me-3 d-flex align-items-center justify-content-center bg-warning bg-opacity-10';
+                icon.className = 'bi bi-exclamation-triangle-fill text-warning';
+                container.classList.remove('d-none');
             } else if (type === 'info') {
                 iconContainer.className = 'rounded-3 me-3 d-flex align-items-center justify-content-center bg-info bg-opacity-10';
                 icon.className = 'bi bi-info-circle-fill text-info';
@@ -1056,12 +1521,136 @@
             text.textContent = title;
             subtext.textContent = message;
 
-            // Auto-hide after 5 seconds
-            setTimeout(hideMessage, 5000);
+            // Auto-hide after 8 seconds for verification messages, 5 seconds for others
+            const timeout = type === 'warning' || type === 'info' ? 8000 : 5000;
+            setTimeout(hideMessage, timeout);
         }
 
         function hideMessage() {
             document.getElementById('messageContainer').classList.add('d-none');
+        }
+
+        // Show verification modal with redirect option
+        function showVerificationModal(verificationUrl, paymentIntentId) {
+            const modal = document.createElement('div');
+            modal.className = 'modal fade';
+            modal.id = 'verificationModal';
+            modal.tabIndex = -1;
+            modal.setAttribute('aria-labelledby', 'verificationModalLabel');
+            modal.setAttribute('aria-hidden', 'true');
+
+            modal.innerHTML = `
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content glass-effect" style="border-radius: 20px;">
+                        <div class="modal-header border-0 pb-0">
+                            <h5 class="modal-title fw-bold" id="verificationModalLabel">
+                                <i class="bi bi-shield-check text-warning me-2"></i>
+                                Bank Account Verification Required
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body pt-0">
+                            <div class="alert alert-warning border-0 mb-4" style="background: rgba(255, 193, 7, 0.1);">
+                                <i class="bi bi-exclamation-triangle me-2"></i>
+                                <strong>Microdeposit Verification</strong><br>
+                                Stripe will send two small deposits to your bank account for verification.
+                            </div>
+
+                            <div class="mb-4">
+                                <h6 class="fw-semibold mb-2">Next Steps:</h6>
+                                <ol class="mb-0">
+                                    <li>Click "Verify with Stripe" below</li>
+                                    <li>Complete the verification process</li>
+                                    <li>Return to complete your payout</li>
+                                </ol>
+                            </div>
+
+                            <div class="d-grid gap-2">
+                                <button type="button" class="btn btn-warning btn-lg" onclick="redirectToVerification('${verificationUrl}')">
+                                    <i class="bi bi-shield-check me-2"></i>
+                                    Verify with Stripe
+                                </button>
+                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+            const bsModal = new bootstrap.Modal(modal);
+            bsModal.show();
+
+            // Clean up modal when hidden
+            modal.addEventListener('hidden.bs.modal', function() {
+                document.body.removeChild(modal);
+            });
+        }
+
+        // Redirect to Stripe verification
+        function redirectToVerification(verificationUrl) {
+            console.log('🔄 Redirecting to Stripe verification:', verificationUrl);
+            window.open(verificationUrl, '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
+        }
+
+        // Currency Formatting Functions
+        function handleAmountInput(input) {
+            // Allow typing by only restricting invalid characters
+            let value = input.value;
+
+            // Remove any non-numeric characters except decimal point
+            value = value.replace(/[^\d.]/g, '');
+
+            // Ensure only one decimal point
+            const parts = value.split('.');
+            if (parts.length > 2) {
+                value = parts[0] + '.' + parts.slice(1).join('');
+            }
+
+            // Limit to 2 decimal places
+            if (parts[1] && parts[1].length > 2) {
+                value = parts[0] + '.' + parts[1].substring(0, 2);
+            }
+
+            input.value = value;
+        }
+
+        function formatCurrency(input) {
+            // Only format when user leaves the field
+            let value = input.value.replace(/[^\d.]/g, '');
+
+            if (value) {
+                const numValue = parseFloat(value);
+                if (!isNaN(numValue)) {
+                    value = numValue.toLocaleString('en-US', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    });
+                    input.value = value;
+                }
+            }
+        }
+
+        function validateAmount(input) {
+            const value = input.value.replace(/[^\d.]/g, '');
+            const numValue = parseFloat(value);
+
+            if (isNaN(numValue) || numValue < 1) {
+                input.classList.add('is-invalid');
+                showMessage('error', 'Invalid Amount', 'Please enter a valid amount of at least $1.00');
+                return false;
+            } else {
+                input.classList.remove('is-invalid');
+                return true;
+            }
+        }
+
+        function getAmountValue() {
+            const amountInput = document.getElementById('amount');
+            const value = amountInput.value.replace(/[^\d.]/g, '');
+            return Math.round(parseFloat(value) * 100); // Convert to cents
         }
 
         // Wizard Navigation Functions
@@ -1150,7 +1739,9 @@
         document.querySelectorAll('.amount-btn').forEach(btn => {
             btn.addEventListener('click', function() {
                 const amount = this.dataset.amount;
-                document.getElementById('amount').value = amount;
+                const amountInput = document.getElementById('amount');
+                amountInput.value = amount;
+                formatCurrency(amountInput);
 
                 // Update button styles
                 document.querySelectorAll('.amount-btn').forEach(b => {
@@ -1226,6 +1817,51 @@
             showApiDocumentation(apiData);
         }
 
+        function initiatePayoutAPI() {
+            const apiData = {
+                endpoint: `${API_BASE_URL}/payout/initiate`,
+                method: 'POST',
+                requestBody: {
+                    lender_account_id: "acct_1SBeq6K4camGic0r",
+                    customer_account_id: "cus_T7ufQnqtX0ZBnZ",
+                    amount: 500,
+                    currency: "usd",
+                    description: "Dynamic payout - auto-detects sandbox vs production",
+                    bank_account: {
+                        account_number: "000123456789",
+                        routing_number: "110000000",
+                        account_holder_name: "Jane Smith",
+                        account_holder_type: "individual",
+                        country: "US"
+                    }
+                },
+                response: {
+                    success: true,
+                    message: "Payout initiated successfully (SANDBOX MODE)",
+                    data: {
+                        payment_intent_id: "pi_payout_sandbox_5bada27a5edf",
+                        payment_method_id: "pm_payout_sandbox_865cd1fc7acd",
+                        lender_account_id: "acct_1SBeq6K4camGic0r",
+                        customer_account_id: "cus_T7ufQnqtX0ZBnZ",
+                        amount: 500,
+                        currency: "usd",
+                        status: "succeeded",
+                        bank_account: {
+                            last4: "6789",
+                            routing_number: "110000000",
+                            account_holder_name: "Jane Smith",
+                            account_holder_type: "individual"
+                        },
+                        description: "Dynamic payout - auto-detects sandbox vs production",
+                        created: "2025-09-27 15:10:00",
+                        sandbox_mode: true,
+                        note: "This payout will appear as succeeded in your Stripe Connect dashboard"
+                    }
+                }
+            };
+            showApiDocumentation(apiData);
+        }
+
         function showApiDocumentation(apiData) {
             document.getElementById('apiEndpoint').textContent = apiData.endpoint;
             document.getElementById('apiMethod').textContent = apiData.method;
@@ -1234,6 +1870,49 @@
 
             const modal = new bootstrap.Modal(document.getElementById('apiModal'));
             modal.show();
+        }
+
+        function initiateDirectChargeAPI() {
+            const apiData = {
+                endpoint: `${API_BASE_URL}/funding/direct-charge`,
+                method: 'POST',
+                requestBody: {
+                    amount: 1000,
+                    currency: "usd",
+                    description: "Direct charge to platform account",
+                    source: "tok_visa"
+                },
+                response: {
+                    success: true,
+                    message: "Direct charge successful",
+                    data: {
+                        charge_id: "ch_direct_123456789",
+                        status: "succeeded",
+                        amount: 1000,
+                        currency: "usd"
+                    }
+                }
+            };
+            showApiDocumentation(apiData);
+        }
+
+        function initiateCanFundAPI() {
+            const apiData = {
+                endpoint: `${API_BASE_URL}/funding/can-fund/acct_1SBeq6K4camGic0r`,
+                method: 'GET',
+                requestBody: null,
+                response: {
+                    success: true,
+                    message: "Account funding eligibility check",
+                    data: {
+                        lender_account_id: "acct_1SBeq6K4camGic0r",
+                        can_fund: true,
+                        reason: "Account is active and eligible for funding",
+                        requirements_met: true
+                    }
+                }
+            };
+            showApiDocumentation(apiData);
         }
 
         function copyToClipboard() {
@@ -1245,43 +1924,37 @@
             });
         }
 
-        // Help Tab Functionality
-        function initializeHelpTabs() {
-            const helpTabs = document.querySelectorAll('.help-tab');
-            const helpContents = document.querySelectorAll('.help-content');
 
-            helpTabs.forEach(tab => {
-                tab.addEventListener('click', function() {
-                    const target = this.getAttribute('data-target');
+        // Main Tab Functionality
+        function showMainTab(tabName) {
+            const fundingTab = document.getElementById('funding-tab');
+            const architectureTab = document.getElementById('architecture-tab');
+            const fundingContent = document.getElementById('funding-content');
+            const statusContent = document.getElementById('status-content');
+            const architectureContent = document.getElementById('architecture-content');
 
-                    // Remove active class from all tabs
-                    helpTabs.forEach(t => {
-                        t.classList.remove('btn-success');
-                        t.classList.add('btn-outline-success');
-                    });
+            if (tabName === 'funding') {
+                // Show funding content
+                fundingContent.style.display = 'block';
+                statusContent.style.display = 'block';
+                architectureContent.style.display = 'none';
 
-                    // Add active class to clicked tab
-                    this.classList.remove('btn-outline-success');
-                    this.classList.add('btn-success');
+                // Update tab states
+                fundingTab.classList.remove('btn-outline-primary');
+                fundingTab.classList.add('btn-primary', 'active');
+                architectureTab.classList.remove('btn-primary', 'active');
+                architectureTab.classList.add('btn-outline-primary');
+            } else if (tabName === 'architecture') {
+                // Show architecture content
+                fundingContent.style.display = 'none';
+                statusContent.style.display = 'none';
+                architectureContent.style.display = 'block';
 
-                    // Hide all content
-                    helpContents.forEach(content => {
-                        content.style.display = 'none';
-                    });
-
-                    // Show target content
-                    const targetContent = document.getElementById(target);
-                    if (targetContent) {
-                        targetContent.style.display = 'block';
-                    }
-                });
-            });
-
-            // Show first content by default
-            if (helpContents.length > 0) {
-                helpContents[0].style.display = 'block';
-                helpTabs[0].classList.remove('btn-outline-success');
-                helpTabs[0].classList.add('btn-success');
+                // Update tab states
+                architectureTab.classList.remove('btn-outline-primary');
+                architectureTab.classList.add('btn-primary', 'active');
+                fundingTab.classList.remove('btn-primary', 'active');
+                fundingTab.classList.add('btn-outline-primary');
             }
         }
 
@@ -1290,7 +1963,6 @@
             showStep(1);
             checkBalance();
             loadFundingHistory();
-            initializeHelpTabs();
         });
     </script>
 </body>
