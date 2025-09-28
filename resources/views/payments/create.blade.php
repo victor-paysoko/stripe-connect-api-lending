@@ -148,7 +148,22 @@
                             </select>
                         </div>
                     </div>
-
+   <div>
+                        <label for="name" class="block text-sm font-medium text-gray-700 mb-2">
+                            Customer Name <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="name" name="name" required maxlength="255"
+                            class="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-stripe focus:border-transparent transition-colors"
+                            placeholder="customer name">
+                    </div>
+                       <div>
+                        <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
+                           Email <span class="text-red-500">*</span>
+                        </label>
+                        <input type="email" id="email" required name="email" maxlength="255"
+                            class="w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-stripe focus:border-transparent transition-colors"
+                            placeholder="customer email">
+                    </div>
                     <!-- Description -->
                     <div>
                         <label for="description" class="block text-sm font-medium text-gray-700 mb-2">
@@ -263,7 +278,7 @@
     <script>
         $(document).ready(function() {
             // Initialize Stripe (replace with your publishable key)
-            const stripe = Stripe('.....'); // Replace with your actual publishable key
+            const stripe = Stripe('.....');
             const elements = stripe.elements();
 
             // Store accounts data
@@ -471,6 +486,8 @@
                     borrower_id: $('#borrower_id').val(),
                     description: $('#description').val() || null,
                     payment_method:"pm_card_visa",
+                    borrower_name:$('#name').val(),
+                     borrower_email:$('#email').val(),
                     confirm_now: true,
                     metadata: {
                         source: 'web_form',
@@ -503,13 +520,13 @@
                     //     }
                     // });
 
-                    if (!response.payment_intent) {
+                    if (!response.id) {
                         // Payment failed
                         setLoadingState(false);
                         showError(response.error);
                     } else {
                         // Payment successful
-                        console.log('Payment succeeded:', response.payment_intent);
+                        console.log('Payment succeeded:', response.id);
                         setLoadingState(false);
                         showSuccess(
                             'Payment Successful!',
