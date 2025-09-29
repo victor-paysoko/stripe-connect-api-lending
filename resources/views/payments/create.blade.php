@@ -174,19 +174,8 @@
                             placeholder="What is this payment for?">
                     </div>
 
-                    <!-- Card Details Section -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-3">
-                            Payment Details <span class="text-red-500">*</span>
-                        </label>
-                        <div class="bg-gray-50 p-4 rounded-lg">
-                            <!-- Stripe Elements will be inserted here -->
-                            <div id="card-element" class="bg-white p-3 rounded border">
-                                <!-- Stripe Elements Card will mount here -->
-                            </div>
-                            <div id="card-errors" role="alert" class="text-red-600 text-sm mt-2"></div>
-                        </div>
-                    </div>
+
+
 
                     <!-- Error Message -->
                     <div id="error-message"
@@ -285,33 +274,21 @@
             let connectedAccounts = [];
 
             // Create card element
-            const cardElement = elements.create('card', {
-                style: {
-                    base: {
-                        fontSize: '16px',
-                        color: '#424770',
-                        '::placeholder': {
-                            color: '#aab7c4',
-                        },
-                    },
-                    invalid: {
-                        color: '#9e2146',
-                    },
-                },
-            });
+            // const cardElement = elements.create('card', {
+            //     style: {
+            //         base: {
+            //             fontSize: '16px',
+            //             color: '#424770',
+            //             '::placeholder': {
+            //                 color: '#aab7c4',
+            //             },
+            //         },
+            //         invalid: {
+            //             color: '#9e2146',
+            //         },
+            //     },
+            // });
 
-            // Mount card element
-            cardElement.mount('#card-element');
-
-            // Handle real-time validation errors from the card Element
-            cardElement.on('change', function(event) {
-                const displayError = document.getElementById('card-errors');
-                if (event.error) {
-                    displayError.textContent = event.error.message;
-                } else {
-                    displayError.textContent = '';
-                }
-            });
 
             // Set up CSRF token for all AJAX requests
             $.ajaxSetup({
@@ -573,12 +550,12 @@
                     submitButton.prop('disabled', true);
                     buttonText.addClass('hidden');
                     loadingText.removeClass('hidden');
-                    cardElement.update({ disabled: true });
+                    // cardElement.update({ disabled: true });
                 } else {
                     submitButton.prop('disabled', false);
                     buttonText.removeClass('hidden');
                     loadingText.addClass('hidden');
-                    cardElement.update({ disabled: false });
+                    // cardElement.update({ disabled: false });
                 }
             }
 
@@ -600,12 +577,12 @@
 
             function hideMessages() {
                 $('#error-message, #success-message').addClass('hidden');
-                document.getElementById('card-errors').textContent = '';
+                // document.getElementById('card-errors').textContent = '';
             }
 
             function resetForm() {
                 $('#payment-form')[0].reset();
-                cardElement.clear();
+                // cardElement.clear();
                 hideMessages();
                 $('#account-info').addClass('hidden');
                 // Reload accounts to refresh the dropdown

@@ -427,8 +427,16 @@ class FiAccountsController extends Controller
 
     private function lookupStripeAccountId(string $fiId): ?string
     {
-        // Replace with your real repository/ORM lookup
-        // return FI::where('id', $fiId)->value('stripe_account_id');
+
         return null;
     }
+
+
+    // function all() {
+    //   try {
+    //    return view('')
+    //   } catch (\Exception $th) {
+    //     //throw $th;
+    //   }
+    // }
 }
